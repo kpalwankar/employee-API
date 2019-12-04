@@ -1,0 +1,309 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:api-gateway="http://www.mulesoft.org/schema/mule/api-gateway" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd 
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/mule/api-gateway/current/mule-api-gateway.xsd">
+    <http:listener-config name="employee-httpListenerConfig">
+        <http:listener-connection host="0.0.0.0" port="8081" />
+    </http:listener-config>
+    <apikit:config name="employee-config" api="employee.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+    <db:config name="Database_Config" doc:name="Database Config" doc:id="bc2a54aa-0649-4da8-9d35-097cf7ca081d" >
+		<db:my-sql-connection host="mysql.shared.demos.mulesoft.com" port="3306" user="mule" password="Mule1379" database="Employee"/>
+	</db:config>
+	<api-gateway:autodiscovery apiId="15894995" doc:name="API Autodiscovery" doc:id="8152460c-3ce1-445c-90af-a21c5bdf58dd" flowRef="employee-main" />
+	<flow name="employee-main">
+        <http:listener config-ref="employee-httpListenerConfig" path="/api/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:router config-ref="employee-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:BAD_REQUEST">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Bad request"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">400</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:METHOD_NOT_ALLOWED">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Method not allowed"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">405</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_ACCEPTABLE">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not acceptable"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">406</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:UNSUPPORTED_MEDIA_TYPE">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Unsupported media type"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">415</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_IMPLEMENTED">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not Implemented"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">501</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="employee-console">
+        <http:listener config-ref="employee-httpListenerConfig" path="/console/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:console config-ref="employee-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="put:\employee\(id):employee-config">
+		<set-variable doc:name="Set variable" doc:id="e0ef1f1a-565d-4417-96cc-463eb1a2340e" variableName="employeeId" value="#[%dw 2.0
+output application/java
+---
+attributes.uriParams.id]"/>
+		<db:update doc:id="3308d916-2fe2-4ef7-a2b4-16b88c6ca76d" config-ref="Database_Config">
+			<db:sql >update employees
+set first_name =:firstname, last_name=:lastname, dob=:dob, ssn=:ssn, bankAcc=:bankAcc
+where id=:id</db:sql>
+			<db:input-parameters ><![CDATA[#[%dw 2.0
+output application/java
+---
+{
+	firstname: payload.firstName,
+	lastname: payload.lastName,
+	dob: payload.dob,
+	ssn: payload.ssn,
+	bankAcc: payload.bankAcc,
+	id: attributes.uriParams.id
+}]]]></db:input-parameters>
+		</db:update>
+		<ee:transform doc:name="Transform Message" doc:id="46a13754-b7c7-46d3-8b26-ffec357cac2f" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	id: vars.employeeId as Number,
+	responseMessage: "Updated employee record successfully"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+    </flow>
+    <flow name="delete:\employee\(id):employee-config">
+		<set-variable value="#[%dw 2.0
+output application/java
+---
+attributes.uriParams.id]" doc:name="Set Variable" doc:id="bb1ccff7-1715-4b6d-80cc-a41d98fe3c3e" variableName="employeeId"/>
+		<db:delete doc:name="Delete" doc:id="c1218da9-5685-4412-8df6-3ca41ed6d6eb" config-ref="Database_Config" >
+			<db:sql >delete from employees where id=:id</db:sql>
+			<db:input-parameters ><![CDATA[#[%dw 2.0
+output application/java
+---
+id:attributes.uriParams.id]]]></db:input-parameters>
+		</db:delete>
+		<ee:transform doc:name="Transform Message" doc:id="cd1f853c-9736-4fb1-abbc-d8e609970c4b" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	id: vars.employeeId as Number,
+	responseMessage:"Employee delete successful"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+    </flow>
+    <flow name="get:\employee:employee-config">
+		<db:select doc:name="Select" doc:id="a0c268d6-d02b-41cd-b8d9-556c8d53152e" config-ref="Database_Config">
+			<db:sql >select * from employees</db:sql>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="847d29de-269a-4e14-bd34-de013b40b8e8" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload map ( payload01 , indexOfPayload01 ) -> {
+	id: payload01.id,
+	firstName: payload01.first_name,
+	lastName: payload01.last_name,
+	dob: payload01.dob,
+	ssn: payload01.ssn,
+	bankAcc: payload01.bankAcc,
+	createdDate: payload01.created_date as String
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+    </flow>
+    <flow name="get:\employee\(id):employee-config">
+		<db:select doc:name="Select" doc:id="e68bc79b-80b2-441f-8095-514d5869e399" config-ref="Database_Config">
+			<db:sql >select * from employees where id=:id</db:sql>
+			<db:input-parameters ><![CDATA[#[%dw 2.0
+output application/java
+---
+{
+	id: attributes.uriParams.id
+}]]]></db:input-parameters>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="39c6cef8-5a89-461a-b2bc-5ba1ed16743a" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	id: payload.id[0],
+	firstName: payload.first_name[0],
+	lastName: payload.last_name[0],
+	dob: payload.dob[0],
+	ssn: payload.ssn[0],
+	bankAcc: payload.bankAcc[0],
+	createdDate: payload.created_date[0]
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+    </flow>
+    <flow name="get:\employee\newRecords\(timestamp):employee-config">
+		<scatter-gather doc:name="Scatter-Gather" doc:id="e3bbb836-3abd-4127-97f9-e4a5eeb407b5" >
+			<route >
+				<db:select doc:name="Select" doc:id="0f6529e4-cae2-4ff8-8242-6924dfbb3a09" config-ref="Database_Config">
+			<db:sql>select * from employees where created_date &gt; :timestamp</db:sql>
+			<db:input-parameters><![CDATA[#[%dw 2.0
+output application/java
+---
+timestamp: attributes.uriParams.timestamp]]]></db:input-parameters>
+		</db:select>
+			</route>
+			<route >
+				<db:select doc:name="Select" doc:id="06d861fa-ec09-4beb-b941-20969fd84082" config-ref="Database_Config">
+					<db:sql >select MAX(created_date) from employees</db:sql>
+				</db:select>
+			</route>
+		</scatter-gather>
+		<ee:transform doc:name="Transform Message" doc:id="b3e0b0fd-36f6-43be-b89b-772208e6a666" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	employeeData: payload."0".payload map ( payload01 , indexOfPayload01 ) -> {
+		"Employee ID": payload01.id,
+		Name: payload01.first_name ++ payload01.last_name,
+		"Date of birth": payload01.dob,
+		"Social Security": payload01.ssn,
+		"Bank Account": payload01.bankAcc default "",
+		"Create Date": payload01.created_date as String
+	},
+	maxDate: payload."1".payload[0]."MAX(created_date)" as String default ""
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<error-handler >
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="1f95f145-d752-49ce-8d57-f12179de8494" type="ANY">
+				<logger level="INFO" doc:name="Logger" doc:id="779947b1-3509-420f-9e0e-1d146a2e78ac" />
+			</on-error-continue>
+		</error-handler>
+    </flow>
+	<flow name="post:\employee:employee-config">
+		<db:insert doc:name="Insert" doc:id="3e685d5f-ca09-4bf1-8531-9daf25f785d3" config-ref="Database_Config">
+			<db:sql >insert into employees (first_name, last_name, dob, ssn, bankAcc)
+values (:firstName, :lastName,:dob, :ssn, :bankAcc)</db:sql>
+			<db:input-parameters ><![CDATA[#[output application/java
+import * from dw::Crypto
+---
+{
+	"firstName": payload.firstName,
+	"lastName": payload.lastName,
+	"dob": payload.dob,
+	"ssn": MD5(payload.ssn as Binary),
+	"bankAcc": MD5(payload.bankAcc as Binary)
+}]]]></db:input-parameters>
+		</db:insert>
+		<db:select doc:name="Select" doc:id="6402ac4b-ab46-4ccb-b742-2f6823a4414c" config-ref="Database_Config">
+			<db:sql >select MAX(id) from employees</db:sql>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="fae14e2e-085c-4ab1-acb0-bfdda1d2d0d6" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	Id: payload."MAX(id)"[0],
+	responseMessage: "Employee created successfully"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+    </flow>
+</mule>

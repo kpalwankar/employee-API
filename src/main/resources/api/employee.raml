@@ -1,0 +1,63 @@
+#%RAML 1.0
+baseUri: https://anypoint.mulesoft.com/mocking/api/v1/links/15e8e0be-5131-40ac-8b89-0ad7bac28138/ # 
+title: Employee Database
+mediaType:
+  - application/json
+version: 1.0.0
+protocols:
+  - HTTPS
+/employee:
+  post:
+    description: Creates a new Employee in the database
+    body:
+      application/json:
+        example: !include Examples/postEmployee.json
+    responses:
+      200:
+        body:
+          application/json:
+            example: !include Examples/createResponse.json
+  get:
+    description: Gets all employees in the database
+    responses:
+      200:
+        body:
+          application/json:
+            example: !include Examples/arrayEmployees.json
+  /{id}:
+    get:
+      description: Gets employee with unique ID from database
+      responses:
+        200:
+          body:
+            application/json:
+              example: !include Examples/employeeDB.json
+    put:
+      description: Updates employee with unique ID in database
+      body:
+        application/json:
+          example: !include Examples/postEmployee.json
+      responses:
+        200:
+          body:
+            application/json:
+              example: !include Examples/updateResponse.json
+    delete:
+      description: Deletes employee with unique ID in database 
+      responses:
+        200:
+          body:
+            application/json:
+              example: !include Examples/deleteResponse.json
+  /newRecords:
+    /{timestamp}:
+      get:
+        description: Gets all new Employee records created after timestamp
+        responses:
+          200:
+            body:
+              application/json:
+                example: !include Examples/arrayEmployees.json
+        
+    
+     
